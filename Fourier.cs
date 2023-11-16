@@ -51,7 +51,7 @@ public static class Fourier {
     return result;
   }
 
-  public static float[] FourierConvolution (float[] a, float[] b, Func<float[], Complex[]> straight, Func<Complex[], Complex[]> reversed) {
+  public static Complex[] FourierConvolution (float[] a, float[] b, Func<float[], Complex[]> straight, Func<Complex[], Complex[]> reversed) {
     return reversed(Enumerable.Zip(straight(a), straight(b), (x, y) => x * y).ToArray());
   }
 }
