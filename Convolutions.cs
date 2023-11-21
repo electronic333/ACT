@@ -1,3 +1,7 @@
+using System.Numerics;
+
+namespace Convolutions;
+
 public static class Convolutions {
   public static Complex[] Linear (Complex[] input1, Complex[] input2) {
     var result = new Complex[input1.Length + input2.Length - 1];
