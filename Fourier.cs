@@ -5,7 +5,10 @@ namespace Fourier;
 public static class Fourier {
   
   public static Complex[] Straight1 (double[] values) {
-    var valuesc = values.Select(x => new Complex(x, 0)).ToArray();
+    return Straight1(values.Select(x => new Complex(x, 0d)).ToArray());
+  }
+
+  public static Complex[] Straight1 (Complex[] values) {
     var result = new Complex[values.Length];
 
     for (int i = 0; i < values.Length; i++) {
@@ -13,7 +16,7 @@ public static class Fourier {
       var sum = new Complex();
       
       for (int j = 0; j < values.Length; j++) {
-        sum += new(double.Cos(coeff * j), -double.Sin(coeff * j)) * result[j];
+        sum += new(double.Cos(coeff * j), -double.Sin(coeff * j)) * values[j];
       }
       
       result[i] = sum;
