@@ -1,30 +1,34 @@
 using System.Numerics;
 
-var input1 = new double[] { 1, 1 };
-var input2 = new double[] { 1, 1 };
-var output1 = Convolutions.Fourier(input1, input2, Fourier.Straight1, Fourier.Reverse1);
-var output2 = Convolutions.Linear(input1, input2);
+Func<Complex, Complex> round = c => ComplexRound(c, 8);
 
-WriteArray(input1, nameof(input1));
-WriteArray(input2, nameof(input2));
-WriteArray(output1.Select(ComplexRound), nameof(output1));
-WriteArray(output2, nameof(output2));
+var input1 = new double[] { 1, 1, 1, 1 };
+var f1i = Fourier.SlowStraight(input1);
+var f1o = Fourier.SlowReverse(f1i);
+var f2i = Fourier.FastStraight(input1);
+var f2o = Fourier.ReverseUsingStraight(f2i);
+
+WriteArray(input1,            "Input");
+WriteArray(f1i.Select(round), "SlowStraight");
+WriteArray(f1o.Select(round), "SlowReversed");
+WriteArray(f2i.Select(round), "FastStraight");
+WriteArray(f2o.Select(round), "FastReversed");
 
 void WriteArray<T> (IEnumerable<T> source, string name) {
   Console.WriteLine($"{name}: [{string.Join(", ", source)}].");
 }
 
-Complex ComplexRound (Complex source) {
-  return new(double.Round(source.Real, 8), double.Round(source.Imaginary, 8));
+Complex ComplexRound (Complex source, int count) {
+  return new(double.Round(source.Real, count), double.Round(source.Imaginary, count));
 }
 
 public static class Fourier {
 
-  public static Complex[] Straight1 (double[] values) {
-    return Straight1(values.Select(x => new Complex(x, 0d)).ToArray());
+  public static Complex[] SlowStraight (double[] values) {
+    return SlowStraight(values.Select(x => new Complex(x, 0d)).ToArray());
   }
 
-  public static Complex[] Straight1 (Complex[] values) {
+  public static Complex[] SlowStraight (Complex[] values) {
     var result = new Complex[values.Length];
 
     for (int i = 0; i < values.Length; i++) {
@@ -41,7 +45,7 @@ public static class Fourier {
     return result;
   }
 
-  public static Complex[] Reverse1 (Complex[] values) {
+  public static Complex[] SlowReverse (Complex[] values) {
     var result = new Complex[values.Length];
 
     for (int i = 0; i < values.Length; i++) {
@@ -58,8 +62,57 @@ public static class Fourier {
     return result;
   }
 
-  public static Complex[] Straight3 (Complex[] values) {
-    
+  public static Complex[] FastStraightArray (Complex[] values) {
+    return FastStraight(values).ToArray();
+  }
+
+  public static IEnumerable<Complex> FastStraight (IEnumerable<double> values) {
+    return FastStraight(values.Select(x => new Complex(x, 0)));
+  }
+
+  public static IEnumerable<Complex> FastStraight (IEnumerable<Complex> values) {
+    var count = values.Count();
+
+    if (count <= 1) {
+      return values;
+    }
+
+    (var evens, var odds) = EvensOddsByIdxs(values);
+
+    evens = FastStraight(evens);
+    odds = FastStraight(odds);
+
+    var coeff = new Complex(0, -2 * double.Pi / count);
+    var factor = Enumerable
+      .Range(0, count / 2)
+      .Zip(odds, (k, o) => Complex.Exp(coeff * k) * o);
+
+    return 
+      Enumerable.Concat(
+        evens.Zip(factor, (a, b) => a + b),
+        evens.Zip(factor, (a, b) => a - b));
+  }
+
+  public static IEnumerable<Complex> ReverseUsingStraight (IEnumerable<Complex> values) {
+    var count = values.Count();
+    return FastStraight(values.Select(Complex.Conjugate)).Select(x => Complex.Conjugate(x) / count);
+  }
+
+  public static IEnumerable<Complex> NormalStraight (IEnumerable<Complex> values) {
+    return null!;
+  }
+
+  private static (IEnumerable<T> Evens, IEnumerable<T> Odds) EvensOddsByIdxs<T> (IEnumerable<T> source) {
+    bool selector = true;
+    List<T> evens = new();
+    List<T> odds = new();
+
+    foreach (T elem in source) {
+      (selector ? evens : odds).Add(elem);
+      selector = !selector;
+    }
+
+    return (evens, odds);
   }
 }
 
