@@ -81,3 +81,21 @@ Console.WriteLine($"For [{string.Join(", ", sizes)}] sizes minimum actions is {M
 //Console.WriteLine($"Is matrixs equals: {IsEqual(slow, fast)}");
 //Console.WriteLine($"Slow elapsed: {slowTime}");
 //Console.WriteLine($"Fast elapsed: {fastTime}");
+
+int MatrixChain (int[] dims) {
+  var n = dims.Length;
+  var c = new int[n + 1, n + 1];
+
+  for (var len = 2; len <= n; len++) {
+    for (var i = 1; i <= n - len + 1; i++) {
+      var j = i + len - 1;
+      c[i, j] = int.MaxValue;
+
+      for (int k = i; j < n && k <= j - 1; k++) {
+        c[i, j] = int.Min(c[i, j], c[i, k] + c[k + 1, j] + dims[i - 1] * dims[k] * dims[j]);
+      }
+    }
+  }
+  return c[1, n - 1];
+}
+
