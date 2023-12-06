@@ -14,7 +14,9 @@ for (var i = 0; i < size; i++) {
 }
 
 var methods = new (Func<int[,], int[,], int[,]> Function, string Name)[] {
-  (Slow, "Slow"), (SlowSwapped, "SlowSwapped"), (FastMult, "Fast"),
+  (Slow, "Slow"), 
+  (SlowSwapped, "SlowSwapped"), 
+  (FastMult, "Fast"),
   (SlowSwappedParallelFor, "SlowSwappedParallelFor"),
 };
 
@@ -22,15 +24,22 @@ var stopwatch = new Stopwatch();
 
 Console.WriteLine($"Multiplicate two matrices {size}x{size}. Method list:");
 
-foreach (var method in methods) {
+var resultList = methods.Select(method => {
   stopwatch.Restart();
-  _ = method.Function(first, second);
+  var matrix = method.Function(first, second);
   stopwatch.Stop();
-  Console.WriteLine($"Method: \"{method.Name}\", elapsed time: {stopwatch.Elapsed};");
+  return (Matrix: matrix, method.Name, stopwatch.Elapsed);
+}).ToList();
+
+foreach (var result in resultList) {
+  Console.WriteLine($"Method: \"{result.Name}\", elapsed time: {result.Elapsed};");
 }
 
+Console.WriteLine(IsMatricesEqual(resultList[0].Matrix, resultList[1].Matrix));
+Console.WriteLine(IsMatricesEqual(resultList[1].Matrix, resultList[3].Matrix));
+
 static T[,] Slow<T> (T[,] first, T[,] second)
-  where T: IAdditionOperators<T, T, T>, IMultiplyOperators<T, T, T> {
+  where T : IAdditionOperators<T, T, T>, IMultiplyOperators<T, T, T> {
 
   if (!IsValidMatrixForMult(first, second)) {
     throw new("Wrong sizes of matrices.");
@@ -49,7 +58,7 @@ static T[,] Slow<T> (T[,] first, T[,] second)
   return result;
 }
 
-static T[,] SlowSwapped<T> (T[,] first, T[,] second) 
+static T[,] SlowSwapped<T> (T[,] first, T[,] second)
   where T : IAdditionOperators<T, T, T>, IMultiplyOperators<T, T, T> {
 
   if (!IsValidMatrixForMult(first, second)) {
@@ -77,15 +86,15 @@ static T[,] SlowSwappedParallelFor<T> (T[,] first, T[,] second)
   }
 
   var result = new T[first.GetLength(0), second.GetLength(1)];
-  
-  Parallel.For(0, first.GetLength(0), new() {  }, i => {
+
+  Parallel.For(0, first.GetLength(0), new() { }, i => {
     for (var k = 0; k < second.GetLength(0); k++) {
       for (var j = 0; j < second.GetLength(1); j++) {
         result[i, j] += first[i, k] * second[k, j];
       }
     }
   });
-    
+
   return result;
 }
 
@@ -153,8 +162,8 @@ static T[,] FastMult<T> (T[,] first, T[,] second)
 }
 
 static T[,] AddMatrix<T> (T[,] matrix1, T[,] matrix2)
-  where T: IAdditionOperators<T, T, T> {
-  
+  where T : IAdditionOperators<T, T, T> {
+
   var n = matrix1.GetLength(0);
   var result = new T[n, n];
 
@@ -168,8 +177,8 @@ static T[,] AddMatrix<T> (T[,] matrix1, T[,] matrix2)
 }
 
 static T[,] SubMatrix<T> (T[,] matrix1, T[,] matrix2)
-  where T: ISubtractionOperators<T, T, T> {
-  
+  where T : ISubtractionOperators<T, T, T> {
+
   var n = matrix1.GetLength(0);
   var result = new T[n, n];
 
@@ -182,7 +191,8 @@ static T[,] SubMatrix<T> (T[,] matrix1, T[,] matrix2)
   return result;
 }
 
-static bool IsEqual<T> (T[,] first, T[,] second) where T : IEqualityOperators<T, T, bool> {
+static bool IsMatricesEqual<T> (T[,] first, T[,] second) 
+  where T : IEqualityOperators<T, T, bool> {
   if (first.GetLength(0) != second.GetLength(0) ||
       first.GetLength(1) != second.GetLength(1)) {
     return false;
